@@ -296,6 +296,13 @@ class LocalTuyaEntity(RestoreEntity, pytuya.ContextualLogger):
 
         return value
 
+    def dp_timestamp(self, key) -> int | None:
+        """Return timestamp for DP if available."""
+        requested_dp = str(key)
+        if hasattr(self._device, "_dp_timestamps"):
+            return self._device._dp_timestamps.get(requested_dp)
+        return None
+
     def status_updated(self) -> None:
         """Device status was updated.
 
@@ -362,8 +369,11 @@ class LocalTuyaEntity(RestoreEntity, pytuya.ContextualLogger):
                 value = value * scale_factor
             if not scale_only and offset is not None:
                 value = value + offset
-            value = round(value, 2)
-
+            device_class = self._config.get(CONF_DEVICE_CLASS, "")
+            if device_class == "energy":
+                value = round(value, 3)
+            else:
+                value = round(value, 2)
         return value
 
     async def restore_state_when_connected(self) -> None:
